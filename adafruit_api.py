@@ -2,7 +2,7 @@ from Adafruit_IO import MQTTClient
 import sys
 from uart import Uart
 class Adafruit_API:
-    def __init__(self,username,key,feed_id_list,port = "COM3"):
+    def __init__(self,username,key,feed_id_list,port = None):
         self.username = username
         self.feed_id_list = feed_id_list
         self.key = key
@@ -12,6 +12,7 @@ class Adafruit_API:
     def connected(self,client):
         print("Connected to server!")
         for feed_id in self.feed_id_list:
+            print("Subscribe to " + feed_id)
             client.subscribe(feed_id)
     def subscribe(self,client,userdata, mid , granted_qos):
         print("Subscribe successful!")
@@ -36,11 +37,14 @@ class Adafruit_API:
                 print("Close door")
                 self.uart.write_message("E")
         if feed_id == 'fan':
+            print("C")
+            self.uart.write_message("C")
+        if feed_id == 'air-conditioner':
             print("C"+payload)
             self.uart.write_message("C"+payload)
-        if feed_id == 'led-control':
+        if feed_id == 'led-changer':
             print("F"+payload)
-            self.uart.write_message("F"+payload)    
+            self.uart.write_message("F"+payload)
     def publish(self,feed_id,data):
         print("Publish to " + feed_id + " : " + str(data))
         self.mqtt_client.publish(feed_id,data)
@@ -51,8 +55,9 @@ class Adafruit_API:
         self.mqtt_client.on_message = self.message
         self.mqtt_client.on_subscribe = self.subscribe
         self.mqtt_client.connect()
-        self.uart = Uart(self.port,self)
-        self.uart.init_connection()
-        self.mqtt_client.loop_background()
+        if (self.port != None):
+            self.uart = Uart(self.port,self)
+            self.uart.init_connection()
+            self.mqtt_client.loop_background()
     def read_serial(self):
         self.uart.read_serial()
